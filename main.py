@@ -278,16 +278,16 @@ async def metatcg(ctx):
 async def meta_ocg(ctx):
     text = (
         "📦 **Top 10 Deck OCG - Cập nhật ngày 22/06/2025**\n\n"
-        "1. **Vanquish Soul** – 14.81%\n"
-        "2. **Snake-Eye** – 13.58%\n"
-        "3. **Purrely** – 12.35%\n"
-        "4. **Voiceless Voice** – 9.88%\n"
-        "5. **Fire King** – 7.41%\n"
-        "6. **Tearlaments** – 6.17%\n"
-        "7. **Centur-Ion** – 4.94%\n"
-        "8. **Runick** – 3.70%\n"
-        "9. **Rikka** – 3.70%\n"
-        "10. **Rescue-ACE** – 2.47%\n"
+        "1. **Vanquish Soul** – (103) 29.10%\n"
+        "2. **Yummy** - (84) 23.73%\n"
+        "3. **Maliss** – (37) 10.45%\n"
+        "4. **Dragon Tail** – (28) 7.91%\n"
+        "5. **Sky Striker** – (18) 5.08%\n"
+        "6. **Lunalight** – (15) 4.24%\n"
+        "7. **White Forest** – (10) 2.82%\n"
+        "8. **Crystron** – (8) 2.26%\n"
+        "9. **Ryzeal** – (8) 2.26%\n"
+        "10. **Blue-Eyes** – (7) 1.98%\n"
     )
     await ctx.send(text)
 
