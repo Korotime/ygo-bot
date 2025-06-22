@@ -200,9 +200,7 @@ async def callback(self, interaction: discord.Interaction):
                             if "- Được dịch bởi Fanpage Yugioh Đấu Bài Ma Thuật -" not in desc.lower():
                                 await interaction.response.send_message("❌ Lá này chưa có bản dịch chính thức.", ephemeral=True)
                             else:
-                                await interaction.response.send_message(f"**Mô tả Việt hóa:**\n
-{desc}
-", ephemeral=True)
+                                await interaction.response.send_message(f"**Mô tả Việt hóa:**\n{desc}", ephemeral=True)
 class VietHoaButtonView(discord.ui.View):
     def __init__(self, card_name):
         super().__init__(timeout=None)
