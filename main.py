@@ -88,8 +88,7 @@ async def search_and_reply(interaction_or_ctx, name):
             traps.append(card_name)
 
     total = len(cards)
-    text = f"🔎 Tổng cộng: **{total}** lá bài liên quan đến tộc **{name}**
-"
+    text = f"🔎 Tổng cộng: **{total}** lá bài liên quan đến tộc **{name}**"
     if monsters_main:
         text += "\n-------\n🟧 **Quái Thú Chính:**\n" + "\n".join(monsters_main)
     if monsters_extra:
