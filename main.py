@@ -233,14 +233,11 @@ async def name_slash(interaction: discord.Interaction, name: str):
 
 # ========== META, MIX, HELP, MIXDECK ==========
 
-import aiohttp
-from datetime import datetime
-
 async def fetch_meta(region: str):
     if region not in ["tcg", "ocg"]:
-        return "Region phải là 'tcg' hoặc 'ocg'.", []
+        return "Region phải là 'tcg' hoặc 'ocg'."
 
-    url = f"https://api.yugiohmeta.com/api/top-decks/tier-list?region={region}&format=advanced&time=last-month"
+    url = f"https://www.yugiohmeta.com/tier-list?region={region.upper()}"
     headers = {
         "User-Agent": "Mozilla/5.0"
     }
@@ -248,19 +245,24 @@ async def fetch_meta(region: str):
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers) as resp:
             if resp.status != 200:
-                return f"Không thể lấy dữ liệu từ yugiohmeta.com (HTTP {resp.status})", []
+                return f"Không thể lấy dữ liệu từ yugiohmeta.com (HTTP {resp.status})"
+            html = await resp.text()
 
-            data = await resp.json()
+    soup = BeautifulSoup(html, "html.parser")
 
-    result = []
-    for i, entry in enumerate(data[:10], start=1):
-        name = entry["name"]
-        count = entry["total_count"]
-        percent = entry["percent"]
-        result.append(f"{i}. {name} – ({count}) {percent}%")
+    labels = soup.select("div.label")
+    percents = soup.select("div.bottom-sub-label")
 
-    date = datetime.now().strftime("%d/%m/%Y")
-    return date, result
+    result = f"📊 **Meta {region.upper()}** - cập nhật: {datetime.now().strftime('%d/%m/%Y')}\n"
+    result += "```"
+
+    for i in range(min(10, len(labels))):
+        name = labels[i].text.strip()
+        percent = percents[i].text.strip()
+        result += f"\n{i+1}. {name} - {percent}"
+
+    result += "\n```"
+    return result
 
 @bot.command(name="metatcg")
 async def metatcg(ctx):
