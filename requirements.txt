@@ -5,4 +5,3 @@ html5lib
 openpyxl
 flask
 pandas
-playwright
