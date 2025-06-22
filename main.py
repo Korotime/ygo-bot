@@ -233,11 +233,14 @@ async def name_slash(interaction: discord.Interaction, name: str):
 
 # ========== META, MIX, HELP, MIXDECK ==========
 
+import aiohttp
+from datetime import datetime
+
 async def fetch_meta(region: str):
-    if region.lower() not in ["tcg", "ocg"]:
+    if region not in ["tcg", "ocg"]:
         return "Region phải là 'tcg' hoặc 'ocg'.", []
 
-    url = f"https://api.yugiohmeta.com/api/top-decks/tier-list?region={region.lower()}&format=advanced&time=last-month"
+    url = f"https://api.yugiohmeta.com/api/top-decks/tier-list?region={region}&format=advanced&time=last-month"
     headers = {
         "User-Agent": "Mozilla/5.0"
     }
@@ -251,9 +254,9 @@ async def fetch_meta(region: str):
 
     result = []
     for i, entry in enumerate(data[:10], start=1):
-        name = entry.get("name", "N/A")
-        count = entry.get("total_count", 0)
-        percent = entry.get("percent", 0)
+        name = entry["name"]
+        count = entry["total_count"]
+        percent = entry["percent"]
         result.append(f"{i}. {name} – ({count}) {percent}%")
 
     date = datetime.now().strftime("%d/%m/%Y")
