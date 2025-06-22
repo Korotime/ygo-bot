@@ -8,6 +8,7 @@ from discord.ui import View, Select
 import pandas as pd
 import difflib
 from bs4 import BeautifulSoup
+from datetime import datetime
 
 # Đọc file Excel dịch
 try:
@@ -240,29 +241,36 @@ async def name_slash(interaction: discord.Interaction, name: str):
 
 # ========== META, MIX, HELP, MIXDECK ==========
 
-async def fetch_meta(format_: str):
-    # format_ là "TCG" hoặc "OCG"
-    url = "https://www.yugiohmeta.com/tier-list"
-    async with aiohttp.ClientSession() as s:
-        r = await s.get(url)
-        html = await r.text()
+async def fetch_meta(region: str):
+    if region not in ["tcg", "ocg"]:
+        return "Region phải là 'tcg' hoặc 'ocg'."
+
+    url = f"https://www.yugiohmeta.com/tier-list?region={region.upper()}"
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers=headers) as resp:
+            if resp.status != 200:
+                return f"Không thể lấy dữ liệu từ yugiohmeta.com (HTTP {resp.status})"
+            html = await resp.text()
+
     soup = BeautifulSoup(html, "html.parser")
-    print(soup.prettify())
 
-    # 1. Lấy ngày update (giả sử có thẻ chứa “Tier List Updates …”)
-    date = soup.find(text=lambda t: "Updated" in t or "Tier List" in t).strip()
+    labels = soup.select("div.label")
+    percents = soup.select("div.bottom-sub-label")
 
-    # 2. Tìm khu vực format (giả sử là các div có data-format)
-    section = soup.find('div', {'id': f'{format_.lower()}-list'})  # ví dụ
-    items = section.find_all('h3')[:10]
+    result = f"📊 **Meta {region.upper()}** - cập nhật: {datetime.now().strftime('%d/%m/%Y')}\n"
+    result += "```"
 
-    results = []
-    for h3 in items:
-        name = h3.get_text().strip()
-        perc = h3.find_next_sibling(text=lambda t: "%" in t).strip()
-        results.append((name, perc))
+    for i in range(min(10, len(labels))):
+        name = labels[i].text.strip()
+        percent = percents[i].text.strip()
+        result += f"\n{i+1}. {name} - {percent}"
 
-    return date, results
+    result += "\n```"
+    return result
 
 @bot.command(name="metatcg")
 async def metatcg(ctx):
