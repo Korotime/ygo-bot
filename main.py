@@ -247,6 +247,7 @@ async def fetch_meta(format_: str):
         r = await s.get(url)
         html = await r.text()
     soup = BeautifulSoup(html, "html.parser")
+    print(soup.prettify())
 
     # 1. Lấy ngày update (giả sử có thẻ chứa “Tier List Updates …”)
     date = soup.find(text=lambda t: "Updated" in t or "Tier List" in t).strip()
@@ -306,7 +307,9 @@ async def help_command(ctx):
     text = (
         "🤖 **Danh sách lệnh:**\n"
         ".ds <tên_tộc>: Tìm tất cả lá bài thuộc tộc bài\n"
-        ".meta: Top 5 tộc bài meta hiện tại\n"
+        ".name <tên_lá_bài>: Xem tên và hình ảnh 1 lá bài cụ thể"
+        ".metatcg: Top 10 tộc bài meta TCG hiện tại\n"
+        ".metaocg: Top 10 tộc bài meta OCG hiện tại\n"
         ".mix [số]: Gợi ý các lá bài linh hoạt\n"
         ".mixdeck <tên_tộc>: Gợi ý tộc bài kết hợp\n"
         ".ping: Kiểm tra bot hoạt động"
