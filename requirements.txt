@@ -1,0 +1,7 @@
+beautifulsoup4
+aiohttp
+discord.py
+html5lib
+openpyxl
+flask
+pandas
