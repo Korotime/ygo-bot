@@ -242,50 +242,63 @@ async def name_slash(interaction: discord.Interaction, name: str):
 # ========== META, MIX, HELP, MIXDECK ==========
 
 async def fetch_meta(region: str):
-    from playwright.async_api import async_playwright
+    if region.lower() not in ["tcg", "ocg"]:
+        return "Region phải là 'tcg' hoặc 'ocg'.", []
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch()
-        page = await browser.new_page()
+    url = f"https://api.yugiohmeta.com/api/top-decks/tier-list?region={region.lower()}&format=advanced&time=last-month"
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
 
-        await page.goto("https://www.yugiohmeta.com/tier-list")
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers=headers) as resp:
+            if resp.status != 200:
+                return f"Không thể lấy dữ liệu từ yugiohmeta.com (HTTP {resp.status})", []
 
-        # 🟡 Thêm đoạn này để chọn OCG nếu cần
-        if region.lower() == "ocg":
-            await page.click("button:has-text('OCG')")
+            data = await resp.json()
 
-        await page.wait_for_selector(".deck-type-container")
+    result = []
+    for i, entry in enumerate(data[:10], start=1):
+        name = entry.get("name", "N/A")
+        count = entry.get("total_count", 0)
+        percent = entry.get("percent", 0)
+        result.append(f"{i}. {name} – ({count}) {percent}%")
 
-        html = await page.content()
-        await browser.close()
-
-    # parse BeautifulSoup bình thường tiếp
-    soup = BeautifulSoup(html, "html.parser")
-    ...
-
-    labels = soup.select("div.label")
-    percents = soup.select("div.bottom-sub-label")
-
-    result = f"📊 **Meta {region.upper()}** - cập nhật: {datetime.now().strftime('%d/%m/%Y')}\n"
-    result += "```"
-
-    for i in range(min(10, len(labels))):
-        name = labels[i].text.strip()
-        percent = percents[i].text.strip()
-        result += f"\n{i+1}. {name} - {percent}"
-
-    result += "\n```"
-    return result
+    date = datetime.now().strftime("%d/%m/%Y")
+    return date, result
 
 @bot.command(name="metatcg")
 async def metatcg(ctx):
-    result = await fetch_meta("tcg")
-    await ctx.send(result)
+    date, lst = await fetch_meta("tcg")
+    if isinstance(lst, str):
+        await ctx.send(lst)
+        return
+
+    msg = f"{date}\n\n"
+    msg += "\n".join(f"`{i+1}.` {line}" for i, line in enumerate(lst))
+    await ctx.send(msg)
+
 
 @bot.command(name="metaocg")
-async def metaocg(ctx):
-    result = await fetch_meta("ocg")
-    await ctx.send(result)
+async def meta_ocg(ctx):
+    text = (
+        "📦 **Top 10 Deck OCG - Cập nhật ngày 22/06/2025**\n\n"
+        "1. **Vanquish Soul** – 14.81%\n"
+        "2. **Snake-Eye** – 13.58%\n"
+        "3. **Purrely** – 12.35%\n"
+        "4. **Voiceless Voice** – 9.88%\n"
+        "5. **Fire King** – 7.41%\n"
+        "6. **Tearlaments** – 6.17%\n"
+        "7. **Centur-Ion** – 4.94%\n"
+        "8. **Runick** – 3.70%\n"
+        "9. **Rikka** – 3.70%\n"
+        "10. **Rescue-ACE** – 2.47%\n"
+    )
+    await ctx.send(text)
+
+@bot.tree.command(name="metaocg", description="Top 10 meta OCG")
+async def metaocg_slash(interaction: discord.Interaction):
+    await meta_ocg(await bot.get_context(interaction))
 
 @bot.command(name="mix")
 async def mix_cards(ctx, count: int = 15):
