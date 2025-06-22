@@ -274,12 +274,12 @@ async def fetch_meta(region: str):
 
 @bot.command(name="metatcg")
 async def metatcg(ctx):
-    result = await fetch_meta("TCG")
+    result = await fetch_meta("tcg")
     await ctx.send(result)
 
 @bot.command(name="metaocg")
 async def metaocg(ctx):
-    result = await fetch_meta("OCG")
+    result = await fetch_meta("ocg")
     await ctx.send(result)
 
 @bot.command(name="mix")
