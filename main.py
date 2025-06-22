@@ -10,14 +10,6 @@ import difflib
 from bs4 import BeautifulSoup
 from datetime import datetime
 
-# Đọc file Excel dịch
-try:
-    df_vn = pd.read_excel("trans_vn_cards.xlsx", sheet_name="Raw")
-    print("✅ File Excel đã được đọc thành công.")
-    print(df_vn.head())
-except Exception as e:
-    print(f"❌ Lỗi khi đọc file Excel: {e}")
-
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix=".", intents=intents)
