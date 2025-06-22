@@ -242,21 +242,26 @@ async def name_slash(interaction: discord.Interaction, name: str):
 # ========== META, MIX, HELP, MIXDECK ==========
 
 async def fetch_meta(region: str):
-    if region not in ["tcg", "ocg"]:
-        return "Region phải là 'tcg' hoặc 'ocg'."
+    from playwright.async_api import async_playwright
 
-    url = f"https://www.yugiohmeta.com/tier-list?region={region.upper()}"
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
+    async with async_playwright() as p:
+        browser = await p.chromium.launch()
+        page = await browser.new_page()
 
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url, headers=headers) as resp:
-            if resp.status != 200:
-                return f"Không thể lấy dữ liệu từ yugiohmeta.com (HTTP {resp.status})"
-            html = await resp.text()
+        await page.goto("https://www.yugiohmeta.com/tier-list")
 
+        # 🟡 Thêm đoạn này để chọn OCG nếu cần
+        if region.lower() == "ocg":
+            await page.click("button:has-text('OCG')")
+
+        await page.wait_for_selector(".deck-type-container")
+
+        html = await page.content()
+        await browser.close()
+
+    # parse BeautifulSoup bình thường tiếp
     soup = BeautifulSoup(html, "html.parser")
+    ...
 
     labels = soup.select("div.label")
     percents = soup.select("div.bottom-sub-label")
