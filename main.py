@@ -22,70 +22,81 @@ bot = commands.Bot(command_prefix=".", intents=intents)
 API_URL = "https://db.ygoprodeck.com/api/v7/cardinfo.php"
 
 # ========== DS COMMAND ==========
-async def search_and_reply(interaction_or_ctx, name, use_embed=True):
-    await interaction_or_ctx.send(f"🔍 Đang tìm bài thuộc tộc **{name}**...")
-
-    all_cards = []  # Danh sách gộp
-
-    # 1. Lấy từ API chính
+# 1. Tập hợp các lá bài chính từ API
+cards = []
+try:
     async with aiohttp.ClientSession() as session:
         async with session.get(API_URL, params={"archetype": name}) as resp:
-            try:
-                data = await resp.json()
-                if resp.status == 200 and "data" in data:
-                    all_cards.extend(data["data"])
-                else:
-                    # Gợi ý tên gần đúng nếu sai
-                    async with session.get(API_URL) as all_resp:
-                        all_data = await all_resp.json()
-                        if "data" in all_data:
-                            archetypes = sorted(set(card.get("archetype", "") for card in all_data["data"] if "archetype" in card))
-                            close = difflib.get_close_matches(name, archetypes, n=1, cutoff=0.6)
-                            if close:
-                                fixed_name = close[0]
-                                await interaction_or_ctx.send(f"↺ Không tìm thấy **{name}**, thử lại với **{fixed_name}**...")
-                                return await search_and_reply(interaction_or_ctx, fixed_name)
-                            else:
-                                await interaction_or_ctx.send(f"❌ Không tìm thấy tộc bài nào tên **{name}**.")
-                                return
-            except Exception as e:
-                await interaction_or_ctx.send(f"❌ Lỗi khi đọc dữ liệu API: {e}")
-                return
+            data = await resp.json()
+            if resp.status == 200 and "data" in data:
+                cards.extend(data["data"])
+            else:
+                # Nếu không tìm thấy chính xác, thử tìm gần giống
+                async with session.get(API_URL) as all_resp:
+                    all_data = await all_resp.json()
+                    if "data" in all_data:
+                        archetypes = sorted(set(c.get("archetype", "") for c in all_data["data"] if "archetype" in c))
+                        close = difflib.get_close_matches(name, archetypes, n=1, cutoff=0.6)
+                        if close:
+                            fixed_name = close[0]
+                            await interaction_or_ctx.send(f"↺ Không tìm thấy **{name}**, thử lại với **{fixed_name}**...")
+                            return await search_and_reply(interaction_or_ctx, fixed_name)
+                        else:
+                            await interaction_or_ctx.send(f"❌ Không tìm thấy tộc bài nào tên **{name}**.")
+                            return
+except Exception as e:
+    await interaction_or_ctx.send(f"❌ Lỗi khi đọc dữ liệu: {e}")
+    return
 
-    # 2. Thêm support từ mô tả (DSP-style)
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(API_URL) as resp:
-                all_data = await resp.json()
-                for c in all_data["data"]:
-                    desc = c.get("desc", "").lower()
-                    arche = c.get("archetype", "").lower()
-                    if name.lower() in desc and arche != name.lower():
-                        all_cards.append(c)
-    except Exception as e:
-        print(f"[!] Lỗi khi tìm support mô tả: {e}")
+# 2. Thêm các lá có nhắc đến tên tộc trong mô tả (nhưng không thuộc archetype)
+try:
+    async with aiohttp.ClientSession() as session:
+        async with session.get(API_URL) as resp:
+            all_data = await resp.json()
+            for c in all_data["data"]:
+                if c in cards:
+                    continue  # đã có rồi
+                desc = c.get("desc", "").lower()
+                arche = c.get("archetype", "").lower() if c.get("archetype") else ""
+                if name.lower() in desc and arche != name.lower():
+                    cards.append(c)  # gộp vào danh sách
+except Exception as e:
+    print(f"[!] Lỗi khi tìm mô tả: {e}")
 
-    # 3. Thêm support từ wiki (nếu có)
-    try:
-        support_cards = await fetch_support_cards(name)
-        for card_name in support_cards:
-            all_cards.append({"name": card_name, "type": "Support (wiki)"})
-    except Exception as e:
-        print(f"[!] Lỗi khi lấy support wiki: {e}")
+# 3. Phân loại toàn bộ cards đã gộp
+monsters_main, monsters_extra, spells, traps = [], [], [], []
 
-    # 4. Hiển thị gộp tất cả
-    card_lines = [f"> {c['name']}" for c in all_cards]
-    total = len(card_lines)
+for c in cards:
+    ctype = c.get("type", "")
+    card_name = f"> {c['name']}"
+    if "Monster" in ctype:
+        if any(x in ctype for x in ["Fusion", "Synchro", "Xyz", "Link"]):
+            monsters_extra.append(card_name)
+        else:
+            monsters_main.append(card_name)
+    elif "Spell" in ctype:
+        spells.append(card_name)
+    elif "Trap" in ctype:
+        traps.append(card_name)
 
-    text = f"🔎 Tổng cộng: **{total}** lá bài liên quan đến tộc **{name}**\n\n"
-    text += "\n".join(card_lines)
+# 4. Xuất kết quả
+total = len(cards)
+text = f"🔎 Tổng cộng: **{total}** lá bài liên quan đến tộc **{name}**\n"
+if monsters_main:
+    text += "\n-------\n🟧 **Quái Thú Chính:**\n" + "\n".join(monsters_main)
+if monsters_extra:
+    text += "\n-------\n🟪 **Quái Thú Extra Deck:**\n" + "\n".join(monsters_extra)
+if spells:
+    text += "\n-------\n🟦 **Phép:**\n" + "\n".join(spells)
+if traps:
+    text += "\n-------\n🟥 **Bẫy:**\n" + "\n".join(traps)
 
-    if len(text) > 2000:
-        chunks = [text[i:i+1900] for i in range(0, len(text), 1900)]
-        for chunk in chunks:
-            await interaction_or_ctx.send(chunk)
-    else:
-        await interaction_or_ctx.send(text)
+if len(text) > 2000:
+    chunks = [text[i:i+1900] for i in range(0, len(text), 1900)]
+    for chunk in chunks:
+        await interaction_or_ctx.send(chunk)
+else:
+    await interaction_or_ctx.send(text)
 
 # ========== CARD SEARCH BY NAME ==========
 async def search_card_by_name(ctx, name):
