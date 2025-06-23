@@ -249,38 +249,20 @@ async def fetch_meta(region: str):
             html = await resp.text()
 
     soup = BeautifulSoup(html, "html.parser")
-
-    # Lấy Top 3
-    top3_blocks = soup.select("div.top-label-row")
-    top3 = []
-    for block in top3_blocks:
-        name = block.select_one("div.label")
-        percent = block.select_one("div.percent")
-        if name and percent:
-            top3.append(f"{name.text.strip()} - {percent.text.strip()}")
-
-    # Lấy từ Top 4 đến 10
-    labels = soup.select("div.label")[3:]
+    
+    labels = soup.select("div.label")
     percents = soup.select("div.bottom-sub-label")
 
-    others = []
-    for i in range(min(7, len(labels), len(percents))):
-        name = labels[i].text.strip()
-        percent = percents[i].text.strip()
-        others.append(f"{name} - {percent}")
-
-    # Gộp kết quả
     result = f"📊 **Meta {region.upper()}** - cập nhật: {datetime.now().strftime('%d/%m/%Y')}\n"
     result += "```"
-    for i, line in enumerate(top3 + others):
-        result += f"\n{i+1}. {line}"
+
+    for i in range(min(10, len(labels), len(percents))):
+        name = labels[i].text.strip()
+        percent = percents[i].text.strip()
+        result += f"\n{i+1}. {name} - {percent}"
+
     result += "\n```"
     return result
-
-@bot.command(name="metatcg")
-async def metatcg(ctx):
-    result = await fetch_meta("tcg")
-    await ctx.send(result)
 
 @bot.command(name="metaocg")
 async def meta_ocg(ctx):
