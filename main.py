@@ -235,7 +235,7 @@ async def name_slash(interaction: discord.Interaction, name: str):
 
 async def fetch_meta(region: str):
     if region not in ["tcg", "ocg"]:
-        return "Region phải là 'tcg' hoặc 'ocg'."
+        return "Region phải là 'tcg' hoặc 'ocg'.", []
 
     url = f"https://www.yugiohmeta.com/tier-list?region={region.upper()}"
     headers = {
@@ -245,7 +245,8 @@ async def fetch_meta(region: str):
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers) as resp:
             if resp.status != 200:
-                return f"Không thể lấy dữ liệu từ yugiohmeta.com (HTTP {resp.status})"
+                return f"Không thể lấy dữ liệu từ yugiohmeta.com (HTTP {resp.status})", []
+
             html = await resp.text()
 
     soup = BeautifulSoup(html, "html.parser")
@@ -253,16 +254,15 @@ async def fetch_meta(region: str):
     labels = soup.select("div.label")
     percents = soup.select("div.bottom-sub-label")
 
-    result = f"📊 **Meta {region.upper()}** - cập nhật: {datetime.now().strftime('%d/%m/%Y')}\n"
-    result += "```"
+    date_str = f"📊 **Meta {region.upper()}** - cập nhật: {datetime.now().strftime('%d/%m/%Y')}"
+    decks = []
 
     for i in range(min(10, len(labels))):
         name = labels[i].text.strip()
         percent = percents[i].text.strip()
-        result += f"\n{i+1}. {name} - {percent}"
+        decks.append(f"{name} - {percent}")
 
-    result += "\n```"
-    return result
+    return date_str, decks
 
 @bot.command(name="metatcg")
 async def metatcg(ctx):
@@ -274,7 +274,6 @@ async def metatcg(ctx):
     msg = f"{date}\n\n"
     msg += "\n".join(f"`{i+1}.` {line}" for i, line in enumerate(lst))
     await ctx.send(msg)
-
 
 @bot.command(name="metaocg")
 async def meta_ocg(ctx):
