@@ -3,7 +3,6 @@ from discord.ext import commands
 from discord import app_commands
 import aiohttp
 import os
-from web import keep_alive  # Web server giữ Replit sống
 from discord.ui import View, Select
 import pandas as pd
 import difflib
@@ -375,7 +374,5 @@ async def on_ready():
         print(f'✅ Slash commands synced: {len(synced)}')
     except Exception as e:
         print(f'❌ Lỗi sync slash command: {e}')
-
-keep_alive()
 TOKEN = os.environ['TOKEN']
 bot.run(TOKEN)
