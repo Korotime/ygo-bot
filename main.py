@@ -293,58 +293,39 @@ async def meta_ocg(ctx):
 async def metaocg_slash(interaction: discord.Interaction):
     await meta_ocg(await bot.get_context(interaction))
 
-async def fetch_top_techs():
-    url = "https://www.yugiohmeta.com/tier-list#techs"
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as res:
-            html = await res.text()
-    soup = BeautifulSoup(html, "html.parser")
-
-    main, side = [], []
-
-    # Tìm tiêu đề "Top Main Deck Techs by Usage Rate"
-    mh = soup.find("h2", string=lambda s: s and "Main Deck Techs" in s)
-    if mh:
-        ul = mh.find_next_sibling("ul")
-        if ul:
-            for li in ul.find_all("li"):
-                parts = li.text.split("–")
-                if len(parts) >= 2:
-                    main.append((parts[0].strip(), parts[1].strip()))
-
-    # Tìm tiêu đề "Top Side Deck Techs by Usage Rate"
-    sh = soup.find("h2", string=lambda s: s and "Side Deck Techs" in s)
-    if sh:
-        ul = sh.find_next_sibling("ul")
-        if ul:
-            for li in ul.find_all("li"):
-                parts = li.text.split("–")
-                if len(parts) >= 2:
-                    side.append((parts[0].strip(), parts[1].strip()))
-
-    return main, side
-
-
-# Lệnh prefix !mix
-@bot.command(name="mix")
-async def mix_prefix(ctx):
-    await mix_cards(ctx)
-
-# Lệnh slash /mix
-@bot.tree.command(name="mix", description="Gợi ý các lá bài linh hoạt")
-async def mix_slash(interaction: discord.Interaction):
-    await mix_cards(await bot.get_context(interaction))
-
-
-# Lệnh prefix !metasp
-@bot.command(name="metasp")
-async def metasp_alias(ctx):
-    await mix_cards(ctx)
-
-# Lệnh slash /metasp
-@bot.tree.command(name="metasp", description="Gợi ý các lá bài linh hoạt (tên khác)")
-async def metasp_slash(interaction: discord.Interaction):
-    await mix_cards(await bot.get_context(interaction))
+@bot.command(name="mixtcg")
+async def mix_tcg(ctx):
+    text = (
+        "🧠 **Các lá bài linh hoạt (TCG Meta – cập nhật ngày 23/06/2025):**\n"
+        "• MULCHARMY FUWALOS — 90% | 2\n"
+        "• ASH BLOSSOM & JOYOUS SPRING — 86% | 2\n"
+        "• DROLL & LOCK BIRD — 85% | 2\n"
+        "• CALLED BY THE GRAVE — 66% | 1\n"
+        "• NIBIRU, THE PRIMAL BEING — 60% | 2\n"
+        "• INFINITE IMPERMANENCE — 58% | 2\n"
+        "• MULCHARMY PURULIA — 56% | 2\n"
+        "• TRIPLE TACTICS TALENT — 46% | 1\n"
+        "• DOMINUS IMPULSE — 40% | 2\n"
+        "• BYSTIAL MAGNAMHUT — 37% | 1\n"
+    )
+    await ctx.send(text)
+    
+@bot.command(name="mixocg")
+async def mix_ocg(ctx):
+    text = (
+        "🧠 **Các lá bài linh hoạt (OCG Meta – cập nhật ngày 23/06/2025):**\n"
+        "• MAXX \"C\" — 98% | 2\n"
+        "• ASH BLOSSOM & JOYOUS SPRING — 97% | 2\n"
+        "• CALLED BY THE GRAVE — 65% | 1\n"
+        "• MULCHARMY FUWALOS — 48% | 2\n"
+        "• TRIPLE TACTICS TALENT — 47% | 1\n"
+        "• CROSSOUT DESIGNATOR — 41% | 1\n"
+        "• FORBIDDEN DROPLET — 40% | 2\n"
+        "• K9 - #17 IZUNA — 33% | 2\n"
+        "• K9 - #ØŰ LUPUS — 33% | 1\n"
+        "• TRIPLE TACTICS THRUST — 31% | 1\n"
+    )
+    await ctx.send(text)
 
 @bot.command(name="ygohelp")
 async def help_command(ctx):
@@ -352,11 +333,28 @@ async def help_command(ctx):
         "🤖 **Danh sách lệnh:**\n"
         ".ds <tên_tộc>: Tìm tất cả lá bài thuộc tộc bài\n"
         ".name <tên_lá_bài>: Xem tên và hình ảnh 1 lá bài cụ thể"
-        ".metatcg: Top 10 tộc bài meta TCG hiện tại\n"
-        ".metaocg: Top 10 tộc bài meta OCG hiện tại\n"
-        ".mix [số]: Gợi ý các lá bài linh hoạt\n"
+        ".meta: Top 10 tộc bài meta TCG/OCG hiện tại\n"
+        ".mix: Top 10 lá bài support TCG/OCG hiện tại\n"
         ".metasp [số]: Công dụng y như lệnh mix\n"
         ".ping: Kiểm tra bot hoạt động"
+    )
+    await ctx.send(text)
+
+@bot.command(name="meta")
+async def help_command(ctx):
+    text = (
+        "🤖 **Vui lòng nhập TCG hay OCG:**\n"
+        ".metatcg: Top 10 tộc bài meta TCG hiện tại\n"
+        ".metaocg: Top 10 tộc bài meta OCG hiện tại\n"
+    )
+    await ctx.send(text)
+
+@bot.command(name="mix")
+async def help_command(ctx):
+    text = (
+        "🤖 **Vui lòng nhập TCG hay OCG:**\n"
+        ".mixtcg: Top 10 lá bài support TCG hiện tại\n"
+        ".mixocg: Top 10 lá bài support OCG hiện tại\n"
     )
     await ctx.send(text)
 
