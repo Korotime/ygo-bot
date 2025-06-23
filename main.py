@@ -367,7 +367,7 @@ async def suggest_mixdeck(interaction_or_ctx, name):
     await send_func(text)
 
 async def fetch_mixdeck_suggestions(archetype):
-    query = archetype.replace(" ", "_")
+    query = archetype.title().replace(" ", "_")
     url = f"https://yugipedia.com/wiki/{query}_(archetype)"
     suggestions = []
     try:
