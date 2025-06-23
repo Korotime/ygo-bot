@@ -295,52 +295,34 @@ async def metaocg_slash(interaction: discord.Interaction):
 
 async def fetch_top_techs():
     url = "https://www.yugiohmeta.com/tier-list#techs"
-    async with aiohttp.ClientSession() as sess:
-        async with sess.get(url) as res:
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as res:
             html = await res.text()
-
     soup = BeautifulSoup(html, "html.parser")
 
-    main_list, side_list = [], []
+    main, side = [], []
 
-    # Lấy danh sách Main Deck Techs
-    main_header = soup.find("h3", string=lambda s: s and "Main Deck Techs" in s)
-    if main_header:
-        ul = main_header.find_next("ul")
+    # Tìm tiêu đề "Top Main Deck Techs by Usage Rate"
+    mh = soup.find("h2", string=lambda s: s and "Main Deck Techs" in s)
+    if mh:
+        ul = mh.find_next_sibling("ul")
         if ul:
             for li in ul.find_all("li"):
                 parts = li.text.split("–")
                 if len(parts) >= 2:
-                    main_list.append((parts[0].strip(), parts[1].strip()))
+                    main.append((parts[0].strip(), parts[1].strip()))
 
-    # Lấy danh sách Side Deck Techs
-    side_header = soup.find("h3", string=lambda s: s and "Side Deck Techs" in s)
-    if side_header:
-        ul = side_header.find_next("ul")
+    # Tìm tiêu đề "Top Side Deck Techs by Usage Rate"
+    sh = soup.find("h2", string=lambda s: s and "Side Deck Techs" in s)
+    if sh:
+        ul = sh.find_next_sibling("ul")
         if ul:
             for li in ul.find_all("li"):
                 parts = li.text.split("–")
                 if len(parts) >= 2:
-                    side_list.append((parts[0].strip(), parts[1].strip()))
+                    side.append((parts[0].strip(), parts[1].strip()))
 
-    return main_list, side_list
-
-async def mix_cards(ctx):
-    main, side = await fetch_top_techs()
-
-    if not main and not side:
-        await ctx.send("❌ Không lấy được dữ liệu từ yugiohmeta.com.")
-        return
-
-    text = "🧠 **Top Main‑Deck Techs:**\n"
-    for name, pct in main:
-        text += f"• {name} — {pct}\n"
-
-    text += "\n🧠 **Top Side‑Deck Techs:**\n"
-    for name, pct in side:
-        text += f"• {name} — {pct}\n"
-
-    await ctx.send(text)
+    return main, side
 
 
 # Lệnh prefix !mix
