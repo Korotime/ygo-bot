@@ -247,9 +247,10 @@ async def fetch_meta(region: str):
             if resp.status != 200:
                 return f"Không thể lấy dữ liệu từ yugiohmeta.com (HTTP {resp.status})"
             html = await resp.text()
+
     soup = BeautifulSoup(html, "html.parser")
-    
-    # Lấy top 3 đặc biệt
+
+    # Lấy Top 3
     top3_blocks = soup.select("div.top-label-row")
     top3 = []
     for block in top3_blocks:
@@ -258,17 +259,17 @@ async def fetch_meta(region: str):
         if name and percent:
             top3.append(f"{name.text.strip()} - {percent.text.strip()}")
 
-    # Lấy phần còn lại (từ deck #4 trở đi)
-    labels = soup.select("div.label")[3:]  # bỏ 3 cái đã dùng ở trên
+    # Lấy từ Top 4 đến 10
+    labels = soup.select("div.label")[3:]
     percents = soup.select("div.bottom-sub-label")
 
     others = []
-    for i in range(min(7, len(labels), len(percents))):  # Lấy 7 dòng tiếp theo
+    for i in range(min(7, len(labels), len(percents))):
         name = labels[i].text.strip()
         percent = percents[i].text.strip()
         others.append(f"{name} - {percent}")
 
-    # Kết quả
+    # Gộp kết quả
     result = f"📊 **Meta {region.upper()}** - cập nhật: {datetime.now().strftime('%d/%m/%Y')}\n"
     result += "```"
     for i, line in enumerate(top3 + others):
