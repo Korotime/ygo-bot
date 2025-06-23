@@ -235,7 +235,7 @@ async def name_slash(interaction: discord.Interaction, name: str):
 
 async def fetch_meta(region: str):
     if region not in ["tcg", "ocg"]:
-        return "Region phải là 'tcg' hoặc 'ocg'.", []
+        return f"Region phải là 'tcg' hoặc 'ocg'."
 
     url = f"https://www.yugiohmeta.com/tier-list?region={region.upper()}"
     headers = {
@@ -245,24 +245,37 @@ async def fetch_meta(region: str):
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers) as resp:
             if resp.status != 200:
-                return f"Không thể lấy dữ liệu từ yugiohmeta.com (HTTP {resp.status})", []
-
+                return f"Không thể lấy dữ liệu từ yugiohmeta.com (HTTP {resp.status})"
             html = await resp.text()
 
     soup = BeautifulSoup(html, "html.parser")
+    
+    # Lấy top 3 đặc biệt
+    top3_blocks = soup.select("div.top-label-row")
+    top3 = []
+    for block in top3_blocks:
+        name = block.select_one("div.label")
+        percent = block.select_one("div.percent")
+        if name and percent:
+            top3.append(f"{name.text.strip()} - {percent.text.strip()}")
 
-    labels = soup.select("div.label")
+    # Lấy phần còn lại (từ deck #4 trở đi)
+    labels = soup.select("div.label")[3:]  # bỏ 3 cái đã dùng ở trên
     percents = soup.select("div.bottom-sub-label")
 
-    date_str = f"📊 **Meta {region.upper()}** - cập nhật: {datetime.now().strftime('%d/%m/%Y')}"
-    decks = []
-
-    for i in range(min(10, len(labels))):
+    others = []
+    for i in range(min(7, len(labels), len(percents))):  # Lấy 7 dòng tiếp theo
         name = labels[i].text.strip()
         percent = percents[i].text.strip()
-        decks.append(f"{name} - {percent}")
+        others.append(f"{name} - {percent}")
 
-    return date_str, decks
+    # Kết quả
+    result = f"📊 **Meta {region.upper()}** - cập nhật: {datetime.now().strftime('%d/%m/%Y')}\n"
+    result += "```"
+    for i, line in enumerate(top3 + others):
+        result += f"\n{i+1}. {line}"
+    result += "\n```"
+    return result
 
 @bot.command(name="metatcg")
 async def metatcg(ctx):
