@@ -247,8 +247,6 @@ async def fetch_meta(region: str):
             if resp.status != 200:
                 return f"Không thể lấy dữ liệu từ yugiohmeta.com (HTTP {resp.status})"
             html = await resp.text()
-
-    soup = BeautifulSoup(html, "html.parser")
     
     # Lấy top 3 đặc biệt
     top3_blocks = soup.select("div.top-label-row")
@@ -279,14 +277,8 @@ async def fetch_meta(region: str):
 
 @bot.command(name="metatcg")
 async def metatcg(ctx):
-    date, lst = await fetch_meta("tcg")
-    if isinstance(lst, str):
-        await ctx.send(lst)
-        return
-
-    msg = f"{date}\n\n"
-    msg += "\n".join(f"`{i+1}.` {line}" for i, line in enumerate(lst))
-    await ctx.send(msg)
+    result = await fetch_meta("tcg")
+    await ctx.send(result)
 
 @bot.command(name="metaocg")
 async def meta_ocg(ctx):
