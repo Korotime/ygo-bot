@@ -293,33 +293,76 @@ async def meta_ocg(ctx):
 async def metaocg_slash(interaction: discord.Interaction):
     await meta_ocg(await bot.get_context(interaction))
 
-@bot.command(name="mix")
-async def mix_cards(ctx, count: int = 15):
-    count = max(1, min(count, 20))
-    card_list = [
-        "Ash Blossom & Joyous Spring", "Maxx \"C\"", "Called by the Grave", "Infinite Impermanence",
-        "Effect Veiler", "Nibiru, the Primal Being", "Ghost Ogre & Snow Rabbit", "Droll & Lock Bird",
-        "Dark Ruler No More", "Evenly Matched", "Forbidden Droplet", "Ghost Belle & Haunted Mansion",
-        "Lightning Storm", "Raigeki", "Triple Tactics Talent", "Dimension Shifter", "Cosmic Cyclone",
-        "Twin Twisters", "Crossout Designator", "Book of Moon"
-    ]
-    text = "🧠 **Các lá bài linh hoạt dùng được nhiều deck:**\n"
-    text += "\n".join(f"• {c}" for c in card_list[:count])
+async def fetch_top_techs():
+    url = "https://www.yugiohmeta.com/tier-list#techs"
+    async with aiohttp.ClientSession() as sess:
+        async with sess.get(url) as res:
+            html = await res.text()
+
+    soup = BeautifulSoup(html, "html.parser")
+
+    main_list, side_list = [], []
+
+    # Lấy danh sách Main Deck Techs
+    main_header = soup.find("h3", string=lambda s: s and "Main Deck Techs" in s)
+    if main_header:
+        ul = main_header.find_next("ul")
+        if ul:
+            for li in ul.find_all("li"):
+                parts = li.text.split("–")
+                if len(parts) >= 2:
+                    main_list.append((parts[0].strip(), parts[1].strip()))
+
+    # Lấy danh sách Side Deck Techs
+    side_header = soup.find("h3", string=lambda s: s and "Side Deck Techs" in s)
+    if side_header:
+        ul = side_header.find_next("ul")
+        if ul:
+            for li in ul.find_all("li"):
+                parts = li.text.split("–")
+                if len(parts) >= 2:
+                    side_list.append((parts[0].strip(), parts[1].strip()))
+
+    return main_list, side_list
+
+async def mix_cards(ctx):
+    main, side = await fetch_top_techs()
+
+    if not main and not side:
+        await ctx.send("❌ Không lấy được dữ liệu từ yugiohmeta.com.")
+        return
+
+    text = "🧠 **Top Main‑Deck Techs:**\n"
+    for name, pct in main:
+        text += f"• {name} — {pct}\n"
+
+    text += "\n🧠 **Top Side‑Deck Techs:**\n"
+    for name, pct in side:
+        text += f"• {name} — {pct}\n"
+
     await ctx.send(text)
 
+
+# Lệnh prefix !mix
+@bot.command(name="mix")
+async def mix_prefix(ctx):
+    await mix_cards(ctx)
+
+# Lệnh slash /mix
 @bot.tree.command(name="mix", description="Gợi ý các lá bài linh hoạt")
-@app_commands.describe(count="Số lượng bài cần gợi ý (tối đa 20)")
-async def mix_slash(interaction: discord.Interaction, count: int = 15):
-    await mix_cards(await bot.get_context(interaction), count)
+async def mix_slash(interaction: discord.Interaction):
+    await mix_cards(await bot.get_context(interaction))
 
+
+# Lệnh prefix !metasp
 @bot.command(name="metasp")
-async def metasp_alias(ctx, count: int = 15):
-    await mix_cards(ctx, count)
+async def metasp_alias(ctx):
+    await mix_cards(ctx)
 
+# Lệnh slash /metasp
 @bot.tree.command(name="metasp", description="Gợi ý các lá bài linh hoạt (tên khác)")
-@app_commands.describe(count="Số lượng bài cần gợi ý (tối đa 20)")
-async def metasp_slash(interaction: discord.Interaction, count: int = 15):
-    await mix_cards(await bot.get_context(interaction), count)
+async def metasp_slash(interaction: discord.Interaction):
+    await mix_cards(await bot.get_context(interaction))
 
 @bot.command(name="ygohelp")
 async def help_command(ctx):
@@ -330,7 +373,7 @@ async def help_command(ctx):
         ".metatcg: Top 10 tộc bài meta TCG hiện tại\n"
         ".metaocg: Top 10 tộc bài meta OCG hiện tại\n"
         ".mix [số]: Gợi ý các lá bài linh hoạt\n"
-        ".mixdeck <tên_tộc>: Gợi ý tộc bài kết hợp\n"
+        ".metasp [số]: Công dụng y như lệnh mix\n"
         ".ping: Kiểm tra bot hoạt động"
     )
     await ctx.send(text)
@@ -338,64 +381,6 @@ async def help_command(ctx):
 @bot.tree.command(name="ygohelp", description="Hiển thị danh sách lệnh của bot")
 async def help_slash(interaction: discord.Interaction):
     await help_command(await bot.get_context(interaction))
-
-@bot.command(name="mixdeck")
-async def mixdeck_prefix(ctx, *, name: str):
-    await suggest_mixdeck(ctx, name)
-
-@bot.tree.command(name="mixdeck", description="Gợi ý tộc bài kết hợp tốt với 1 tộc bài")
-@app_commands.describe(name="Tên tộc bài")
-async def mixdeck_slash(interaction: discord.Interaction, name: str):
-    await suggest_mixdeck(interaction, name)
-
-async def suggest_mixdeck(interaction_or_ctx, name):
-    if isinstance(interaction_or_ctx, discord.Interaction):
-        await interaction_or_ctx.response.send_message(f"⏳ Đang tìm các tộc bài kết hợp với **{name}**... (mất vài giây)")
-        followup = interaction_or_ctx.followup
-        send_func = followup.send
-    else:
-        await interaction_or_ctx.send(f"⏳ Đang tìm các tộc bài kết hợp với **{name}**... (mất vài giây)")
-        send_func = interaction_or_ctx.send
-
-    suggestions = await fetch_mixdeck_suggestions(name)
-    if not suggestions:
-        await send_func(f"❌ Không tìm thấy gợi ý nào từ web cho tộc **{name}**.")
-        return
-    text = f"🔗 **Các tộc bài thường phối hợp với {name} (tham khảo từ Yugipedia):**\n"
-    for s in suggestions:
-        text += f"• **{s}**\n"
-    await send_func(text)
-
-async def fetch_mixdeck_suggestions(archetype):
-    query = archetype.title().replace(" ", "_")
-    url = f"https://yugipedia.com/wiki/{query}_(archetype)"
-    suggestions = []
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as resp:
-                if resp.status != 200:
-                    return []
-                html = await resp.text()
-                soup = BeautifulSoup(html, "html.parser")
-                header_candidates = soup.find_all("span", class_="mw-headline")
-                target_header = None
-                for header in header_candidates:
-                    if any(kw in header.text for kw in ["Recommended support", "Related archetypes", "Combos", "Mix"]):
-                        target_header = header
-                        break
-                if target_header:
-                    for tag in target_header.parent.find_next_siblings():
-                        if tag.name == "ul":
-                            for li in tag.find_all("li"):
-                                text = li.get_text(strip=True)
-                                if text and text not in suggestions:
-                                    suggestions.append(text)
-                                if len(suggestions) >= 10:
-                                    break
-                            break
-    except Exception:
-        suggestions = []
-    return suggestions
 
 # ========== PING & READY ==========
 @bot.command()
