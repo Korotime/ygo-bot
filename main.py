@@ -234,13 +234,18 @@ async def name_slash(interaction: discord.Interaction, name: str):
 # ========== META, MIX, HELP, MIXDECK ==========
 
 async def fetch_meta(region: str):
-    if region not in ["tcg", "ocg"]:
-        return f"Region phải là 'tcg' hoặc 'ocg'."
+    if region != "tcg":
+        return "Chỉ hỗ trợ TCG ở chế độ tự động. OCG cần cập nhật tay."
 
-    url = f"https://www.yugiohmeta.com/tier-list?region={region.upper()}"
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
+    # Top 3 chép tay, lấy từ yugiohmeta.com hôm nay (23/06/2025)
+    top3 = [
+        "1. Maliss - (159) 27.89%",
+        "2. Ryzeal Mitsurugi - (156) 27.37%",
+        "3. Mitsurugi - (52) 9.12%"
+    ]
+
+    url = f"https://www.yugiohmeta.com/tier-list?region=TCG"
+    headers = {"User-Agent": "Mozilla/5.0"}
 
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers) as resp:
@@ -249,20 +254,23 @@ async def fetch_meta(region: str):
             html = await resp.text()
 
     soup = BeautifulSoup(html, "html.parser")
-    
-    labels = soup.select("div.label")
-    percents = soup.select("div.bottom-sub-label")
+    labels = soup.select("div.label")[0:7]   # chỉ lấy 7 cái tiếp theo
+    percents = soup.select("div.bottom-sub-label")[0:7]
 
-    result = f"📊 **Meta {region.upper()}** - cập nhật: {datetime.now().strftime('%d/%m/%Y')}\n"
-    result += "```"
-
-    for i in range(min(10, len(labels), len(percents))):
+    others = []
+    for i in range(len(labels)):
         name = labels[i].text.strip()
         percent = percents[i].text.strip()
-        result += f"\n{i+1}. {name} - {percent}"
+        others.append(f"{i+4}. {name} - {percent}")
 
-    result += "\n```"
+    result = f"📊 **Meta TCG** - cập nhật: {datetime.now().strftime('%d/%m/%Y')}\n"
+    result += "```" + "\n".join(top3 + others) + "\n```"
     return result
+
+@bot.command(name="metatcg")
+async def metatcg(ctx):
+    result = await fetch_meta("tcg")
+    await ctx.send(result)
 
 @bot.command(name="metaocg")
 async def meta_ocg(ctx):
