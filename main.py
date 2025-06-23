@@ -247,6 +247,7 @@ async def fetch_meta(region: str):
             if resp.status != 200:
                 return f"Không thể lấy dữ liệu từ yugiohmeta.com (HTTP {resp.status})"
             html = await resp.text()
+    soup = BeautifulSoup(html, "html.parser")
     
     # Lấy top 3 đặc biệt
     top3_blocks = soup.select("div.top-label-row")
