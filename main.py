@@ -179,20 +179,21 @@ async def send_card_detail(interaction, card_name):
             embed.add_field(name="Attribute", value=card.get("attribute", "N/A"))
             embed.set_footer(text=f"ID: {card.get('id')}")
             if isinstance(interaction, discord.Interaction):
-                await interaction.followup.send(embed=embed, view=VietHoaButtonView(card["name"]))
+                await interaction.followup.send(embed=embed, view=VietHoaButtonView(card["name"], df_vn))
             else:
                 await interaction.send(embed=embed, view=VietHoaButtonView(card["name"]))
 class VietHoaButton(discord.ui.Button):
-    def __init__(self, card_name):
+    def __init__(self, card_name, df_vn):
         super().__init__(label="Mô Tả Việt Hóa", style=discord.ButtonStyle.success, custom_id="btn_viet_hoa")
         self.card_name = card_name
+        self.df_vn = df_vn
 
-async def callback(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=True)  # ✅ PHẢI Ở ĐÂY
-        
-        card_row = df_vn[df_vn["name"].str.lower() == self.card_name.lower()]
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+
+        card_row = self.df_vn[self.df_vn["name"].str.lower() == self.card_name.lower()]
         if card_row.empty:
-            await interaction.followup.send("🛑 Lá bài này chưa được Việt hóa.", ephemeral=True)
+            await interaction.followup.send("🔴 Lá bài này chưa được Việt hóa.", ephemeral=True)
             return
 
         desc = str(card_row.iloc[0]["desc"])
@@ -202,9 +203,9 @@ async def callback(self, interaction: discord.Interaction):
             await interaction.followup.send(f"**Mô tả Việt hóa:**\n{desc}", ephemeral=True)
 
 class VietHoaButtonView(discord.ui.View):
-    def __init__(self, card_name):
+    def __init__(self, card_name, df_vn):
         super().__init__(timeout=None)
-        self.add_item(VietHoaButton(card_name))
+        self.add_item(VietHoaButton(card_name, df_vn))
 
 async def search_card_by_name(ctx, name):
     async with aiohttp.ClientSession() as session:
