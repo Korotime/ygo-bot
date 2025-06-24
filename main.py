@@ -181,7 +181,7 @@ async def send_card_detail(interaction, card_name):
             if isinstance(interaction, discord.Interaction):
                 await interaction.followup.send(embed=embed, view=VietHoaButtonView(card["name"], df_vn))
             else:
-                await interaction.send(embed=embed, view=VietHoaButtonView(card["name"]))
+                await interaction.send(embed=embed, view=VietHoaButtonView(card["name"], df_vn))
 class VietHoaButton(discord.ui.Button):
     def __init__(self, card_name, df_vn):
         super().__init__(label="Mô Tả Việt Hóa", style=discord.ButtonStyle.success, custom_id="btn_viet_hoa")
