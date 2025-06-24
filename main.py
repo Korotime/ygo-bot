@@ -183,21 +183,24 @@ async def send_card_detail(interaction, card_name):
             else:
                 await interaction.send(embed=embed, view=VietHoaButtonView(card["name"]))
 class VietHoaButton(discord.ui.Button):
-                        def __init__(self, card_name):
-                            super().__init__(label="Mô Tả Việt Hóa", style=discord.ButtonStyle.success, custom_id="btn_viet_hoa")
-                            self.card_name = card_name
+    def __init__(self, card_name):
+        super().__init__(label="Mô Tả Việt Hóa", style=discord.ButtonStyle.success, custom_id="btn_viet_hoa")
+        self.card_name = card_name
 
 async def callback(self, interaction: discord.Interaction):
-                            card_row = df_vn[df_vn["name"].str.lower() == self.card_name.lower()]
-                            if card_row.empty:
-                                await interaction.response.send_message("🛑 Lá bài này chưa được Việt hóa.", ephemeral=True)
-                                return
+        await interaction.response.defer(ephemeral=True)  # ✅ PHẢI Ở ĐÂY
+        
+        card_row = df_vn[df_vn["name"].str.lower() == self.card_name.lower()]
+        if card_row.empty:
+            await interaction.followup.send("🛑 Lá bài này chưa được Việt hóa.", ephemeral=True)
+            return
 
-                            desc = str(card_row.iloc[0]["desc"])
-                            if "- Được dịch bởi Fanpage Yugioh Đấu Bài Ma Thuật -" not in desc.lower():
-                                await interaction.response.send_message("❌ Lá này chưa có bản dịch chính thức.", ephemeral=True)
-                            else:
-                                await interaction.response.send_message(f"**Mô tả Việt hóa:**\n{desc}", ephemeral=True)
+        desc = str(card_row.iloc[0]["desc"])
+        if "- Được dịch bởi Fanpage Yugioh Đấu Bài Ma Thuật -" not in desc.lower():
+            await interaction.followup.send("❌ Lá này chưa có bản dịch chính thức.", ephemeral=True)
+        else:
+            await interaction.followup.send(f"**Mô tả Việt hóa:**\n{desc}", ephemeral=True)
+
 class VietHoaButtonView(discord.ui.View):
     def __init__(self, card_name):
         super().__init__(timeout=None)
