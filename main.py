@@ -9,6 +9,8 @@ import difflib
 from bs4 import BeautifulSoup
 from datetime import datetime
 
+df_vn = pd.read_excel("trans_vn_cards.xlsx")
+
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix=".", intents=intents)
