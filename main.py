@@ -197,7 +197,7 @@ class VietHoaButton(discord.ui.Button):
             return
 
         desc = str(card_row.iloc[0]["desc"])
-        if "- Được dịch bởi Fanpage Yugioh Đấu Bài Ma Thuật -" not in desc.lower():
+        if "dịch bởi fanpage yugioh đấu bài ma thuật" not in desc.lower():
             await interaction.followup.send("❌ Lá này chưa có bản dịch chính thức.", ephemeral=True)
         else:
             await interaction.followup.send(f"**Mô tả Việt hóa:**\n{desc}", ephemeral=True)
