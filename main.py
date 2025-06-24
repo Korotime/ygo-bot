@@ -377,5 +377,8 @@ async def on_ready():
         print(f'✅ Slash commands synced: {len(synced)}')
     except Exception as e:
         print(f'❌ Lỗi sync slash command: {e}')
-TOKEN = os.environ['TOKEN']
-bot.run(TOKEN)
+TOKEN = os.getenv("TOKEN")
+if TOKEN:
+    bot.run(TOKEN)
+else:
+    print("❌ TOKEN chưa được thiết lập trong biến môi trường.")
