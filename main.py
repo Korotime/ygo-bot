@@ -10,8 +10,6 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 
 df_vn = pd.read_excel("trans_vn_cards.xlsx").fillna("")
-print("DEBUG tên nhận:", self.card_name)
-print("DEBUG danh sách df_vn:", df_vn['name'].str.lower().tolist())
 
 intents = discord.Intents.default()
 intents.message_content = True
